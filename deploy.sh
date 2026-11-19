@@ -52,14 +52,14 @@ lote() {
   verificar_sql "$RAIZ/verificaciones/01_verificar_bronze.sql"
 
   paso "Silver y gold (procedimiento sp_actualizar)"
-  ejecutar_sql "$RAIZ/sql/00_tabla_ejecuciones.sql" >/dev/null
-  ejecutar_sql "$RAIZ/sql/10_sp_actualizar.sql" >/dev/null
-  ejecutar_sql "$RAIZ/sql/11_vista_exclusiones.sql" >/dev/null
+  ddl "$RAIZ/sql/00_tabla_ejecuciones.sql"
+  ddl "$RAIZ/sql/10_sp_actualizar.sql"
   llamar sp_actualizar
+  ddl "$RAIZ/sql/11_vista_exclusiones.sql"     # la vista lee s_lecturas: va DESPUÉS de sp_actualizar
   verificar_sql "$RAIZ/verificaciones/02_verificar_silver_gold.sql"
 
   paso "Modelo en estrella (procedimiento sp_modelar)"
-  ejecutar_sql "$RAIZ/sql/20_sp_modelar.sql" >/dev/null
+  ddl "$RAIZ/sql/20_sp_modelar.sql"
   llamar sp_modelar
   verificar_sql "$RAIZ/verificaciones/03_verificar_modelo.sql"
 
@@ -106,9 +106,9 @@ flujo() {
   deactivate
 
   paso "Silver y gold de eventos (procedimiento sp_procesar_eventos) y vista híbrida"
-  ejecutar_sql "$RAIZ/sql/50_sp_procesar_eventos.sql" >/dev/null
+  ddl "$RAIZ/sql/50_sp_procesar_eventos.sql"
   llamar sp_procesar_eventos
-  ejecutar_sql "$RAIZ/sql/60_vista_hibrida.sql" >/dev/null
+  ddl "$RAIZ/sql/60_vista_hibrida.sql"
 
   local J="$SALIDAS/resumen_eventos.json" t=()
   for par in ENVIADOS:enviados DUP:duplicados_entrega SINCAT:instrumento_inexistente NULOS:npa_nulo \

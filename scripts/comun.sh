@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Funciones comunes. Se carga con: source scripts/comun.sh
 set -euo pipefail
+export PYTHONWARNINGS="ignore"   # silencia el aviso de dependencias que imprime bq en Cloud Shell
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ -f "$RAIZ/config.env" ]]; then
@@ -28,6 +29,17 @@ ejecutar_sql() {
   for par in "$@"; do expr+=(-e "s/${par%%=*}/${par#*=}/g"); done
   sed "${expr[@]}" "$archivo" | bq query --use_legacy_sql=false --location="$REGION" \
       --project_id="$PROYECTO" --max_rows=200 --format=pretty
+}
+
+# Ejecuta SQL de definición (tablas, procedimientos, vistas) sin imprimir el resultado,
+# pero MUESTRA el error completo si falla. Uso: ddl archivo
+ddl() {
+  local salida
+  if ! salida="$(ejecutar_sql "$@" 2>&1)"; then
+    printf '%s\n' "$salida" >&2
+    echo "   >>> ERROR al ejecutar $1" >&2
+    return 1
+  fi
 }
 
 # Ejecuta una verificación y falla si alguna fila dice FALLA.
