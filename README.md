@@ -49,6 +49,7 @@ Decisiones principales: SQL en BigQuery como motor (el volumen no justifica Spar
 .
 ├── deploy.sh                 # lote | flujo | todo
 ├── destroy.sh                # elimina todo y lista lo que queda
+├── verificar.sh              # repite las verificaciones sin volver a desplegar
 ├── config.env.example        # copiar a config.env y poner PROYECTO
 ├── scripts/
 │   ├── comun.sh              # funciones compartidas (tokens, verificaciones)
@@ -125,7 +126,7 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 
 ## Verificaciones y pruebas
 
-- **En la nube:** los 5 archivos de `verificaciones/` se ejecutan dentro de `deploy.sh`. Comparan BigQuery con el manifiesto que generó el script de datos.
+- **En la nube:** los 5 archivos de `verificaciones/` se ejecutan dentro de `deploy.sh`. Comparan BigQuery con el manifiesto que generó el script de datos. Para repetirlas sin volver a desplegar: `./verificar.sh todo` (o `./verificar.sh bronze silver_gold modelo`).
 - **Local, sin nube:** `python3 tests/test_local_duckdb.py` traduce el SQL de BigQuery a DuckDB (con `sqlglot`) y ejecuta toda la lógica, incluido el flujo simulado. Requiere `pip install duckdb sqlglot`. No prueba particionado, clustering, procedimientos, Pub/Sub ni IAM.
 
 ## Costos y limpieza
