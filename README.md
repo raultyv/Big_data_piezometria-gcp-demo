@@ -160,7 +160,7 @@ Una corrida real, con datos sintéticos (semilla 42), en un proyecto nuevo de Go
 - Flujo (simulado): 508 mensajes enviados y 508 recibidos; las 25 fallas inyectadas quedaron marcadas; 483 en gold del flujo; vista híbrida de 36,070 filas.
 - Latencia medida, una sola corrida desde Cloud Shell: mediana de 175 ms y p95 de 219 ms hasta publicar; todo consultable a los 4.8 s del primer envío. Es una referencia, no una prueba de carga.
 
-Problemas que apareció en la primera corrida real y que se corrigieron:
+Problemas que aparecieron en la primera corrida real y que se corrigieron:
 
 1. `scripts/00_proyecto.sh` falló al vincular la facturación porque la cuenta alcanzó su cuota de proyectos con facturación, y no se podía repetir porque el proyecto ya existía. Ahora es repetible y avisa de la cuota.
 2. `deploy.sh lote` creaba la vista `v_exclusiones` antes de `sp_actualizar()`, y la vista lee `s_lecturas`, que aún no existía. Además el error quedaba oculto. Se corrigió el orden y se agregó `ddl()`, que muestra el error completo.
