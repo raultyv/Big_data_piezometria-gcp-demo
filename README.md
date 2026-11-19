@@ -148,7 +148,21 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 | Qué | Estado |
 |---|---|
 | Lógica SQL sobre datos sintéticos (DuckDB, 35 comprobaciones) | Probada localmente |
-| `deploy.sh` y `destroy.sh` con una corrida real en Google Cloud | **Pendiente de la corrida de validación (se registra aquí con fecha al completarla)** |
-| `scripts/00_proyecto.sh` (proyecto, facturación, presupuesto) | Pendiente de la corrida de validación |
+| `deploy.sh lote` y `deploy.sh flujo` en Google Cloud (proyecto nuevo, 19-nov-2026) | **Validados**: todas las verificaciones en OK |
+| `destroy.sh` (19-nov-2026) | **Validado**: suscripción, tema, dataset y bucket eliminados; las listas finales quedaron vacías |
+| `scripts/00_proyecto.sh` (proyecto, facturación, presupuesto) | **Validado** tras una corrección (ver abajo) |
 
-Mientras una fila diga «pendiente», esa pieza está escrita pero no probada en Google Cloud.
+### Registro de la validación (19-nov-2026)
+
+Una corrida real, con datos sintéticos (semilla 42), en un proyecto nuevo de Google Cloud en `southamerica-east1`:
+
+- Lote: 35,617 lecturas de bronze; 26 duplicados exactos y 4 filas en conflicto marcados; 35,587 en gold; modelo en estrella con 35,587 hechos, 80 instrumentos, 484 tramos y 517 días.
+- Flujo (simulado): 508 mensajes enviados y 508 recibidos; las 25 fallas inyectadas quedaron marcadas; 483 en gold del flujo; vista híbrida de 36,070 filas.
+- Latencia medida, una sola corrida desde Cloud Shell: mediana de 175 ms y p95 de 219 ms hasta publicar; todo consultable a los 4.8 s del primer envío. Es una referencia, no una prueba de carga.
+
+Problemas que apareció en la primera corrida real y que se corrigieron:
+
+1. `scripts/00_proyecto.sh` falló al vincular la facturación porque la cuenta alcanzó su cuota de proyectos con facturación, y no se podía repetir porque el proyecto ya existía. Ahora es repetible y avisa de la cuota.
+2. `deploy.sh lote` creaba la vista `v_exclusiones` antes de `sp_actualizar()`, y la vista lee `s_lecturas`, que aún no existía. Además el error quedaba oculto. Se corrigió el orden y se agregó `ddl()`, que muestra el error completo.
+
+La prueba local no detectó el segundo problema porque ejecutaba los pasos en el orden correcto: la prueba local y la corrida real se complementan.
