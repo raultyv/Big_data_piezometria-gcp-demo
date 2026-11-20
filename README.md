@@ -6,7 +6,7 @@ Demo reproducible de un pipeline de datos para lecturas piezométricas: ingesta 
 >
 > **Alcance.** Es un ejercicio de ingeniería de datos. No evalúa la estabilidad ni la seguridad de ninguna presa y no sustituye el sistema de monitoreo de seguridad, el criterio del ingeniero de registro ni la revisión independiente. Los niveles (NPC, NAC, NAM, NCA) del generador son arbitrarios y están marcados como `provisional`.
 
-> **Uso de IA generativa.** Este repositorio se desarrolló con apoyo de IA generativa para escribir el código, los scripts y la documentación. El autor definió el alcance, ejecutó el demo en Google Cloud, revisó los resultados y validó las verificaciones.
+> **Declaración de uso de IA generativa.** Este repositorio se desarrolló con apoyo de IA generativa para escribir el código, los scripts y la documentación. El autor definió el alcance, ejecutó el demo en Google Cloud, revisó los resultados y validó las verificaciones.
 
 ## Contenido
 
