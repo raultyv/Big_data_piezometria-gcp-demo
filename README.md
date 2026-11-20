@@ -6,7 +6,7 @@ Demo reproducible de un pipeline de datos para lecturas piezométricas: ingesta 
 >
 > **Alcance.** Es un ejercicio de ingeniería de datos. No evalúa la estabilidad ni la seguridad de ninguna presa y no sustituye el sistema de monitoreo de seguridad, el criterio del ingeniero de registro ni la revisión independiente. Los niveles (NPC, NAC, NAM, NCA) del generador son arbitrarios y están marcados como `provisional`.
 
-> **Uso de IA generativa.** Este repositorio se desarrolló con apoyo de IA generativa para escribir el código, los scripts y la documentación. El autor definió el alcance, ejecutó el demo en Google Cloud, revisó los resultados y validó las verificaciones.
+> **Declaración de uso de IA generativa.** Este repositorio se desarrolló con apoyo de IA generativa para escribir el código, los scripts y la documentación. El autor definió el alcance, ejecutó el demo en Google Cloud, revisó los resultados y validó las verificaciones.
 
 ## Contenido
 
@@ -152,7 +152,7 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 
 ## Costos y limpieza
 
-- La estimación de costos de la arquitectura propuesta está en el documento de la entrega 1 (Calculadora de precios de Google Cloud, con fecha y supuestos). Este demo, con unos 5 MB de datos, queda dentro de los niveles gratuitos de BigQuery y Cloud Storage según la documentación de Google; confirmar los valores vigentes en las páginas oficiales de precios antes de usarlo con otros volúmenes.
+- La estimación de costos de la arquitectura propuesta está en el documento de la entrega 3 (Calculadora de precios de Google Cloud, con fecha y supuestos). 
 - Un presupuesto de Google Cloud **avisa, no corta el gasto**. Revise el reporte de facturación después de cada etapa.
 - `./destroy.sh` elimina suscripción, tema, dataset y bucket (con todas sus versiones) y lista lo que queda. Con `--proyecto` borra además el proyecto.
 
