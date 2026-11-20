@@ -169,10 +169,14 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 | Qué | Estado |
 |---|---|
 | Lógica SQL sobre datos sintéticos (DuckDB, 42 comprobaciones, incluida la capa de exposición) | Probada localmente |
-| Capa de exposición y `consultar.sh` en Google Cloud | **Pendiente de validar**: probada solo en local (vistas y conversión de la respuesta); la llamada real a la API REST aún no se ejecutó |
+| Capa de exposición y `consultar.sh` en Google Cloud (20-nov-2026) | **Validados**: las 5 comprobaciones de `verificaciones/06` en OK y las tres consultas (`resumen_dique`, `ultima_lectura`, `serie`) devolvieron JSON en 1.0 a 1.2 s (una sola medición cada una) |
 | `deploy.sh lote` y `deploy.sh flujo` en Google Cloud (proyecto nuevo, 19-nov-2026) | **Validados**: todas las verificaciones en OK |
 | `destroy.sh` (19-nov-2026) | **Validado**: suscripción, tema, dataset y bucket eliminados; las listas finales quedaron vacías |
 | `scripts/00_proyecto.sh` (proyecto, facturación, presupuesto) | **Validado** tras una corrección (ver abajo) |
+
+### Registro de la capa de exposición (20-nov-2026)
+
+Segunda corrida real, en el mismo proyecto de pruebas, con `time ./deploy.sh todo`: terminó en 3 min 7 s sin ninguna comprobación en FALLA (el script se detiene si alguna falla). Las comprobaciones de flujo, vista híbrida y exposición salieron en OK, con los mismos conteos que el 19-nov (508 enviados y 508 recibidos, 483 en gold del flujo, vista de 36,070 filas, 80 instrumentos en `api_ultima_lectura`). La latencia hasta publicar fue distinta: mediana de 538 ms y p95 de 661 ms (498 mensajes únicos), contra 175 y 219 ms del 19-nov. Es la variación que se espera de una medición única desde Cloud Shell, y confirma que esas cifras son una referencia, no una garantía.
 
 ### Registro de la validación (19-nov-2026)
 
