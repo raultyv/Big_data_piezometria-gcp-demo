@@ -1,6 +1,6 @@
 # Monitoreo piezométrico de un depósito de relaves en Google Cloud: demo end-to-end
 
-Demo reproducible de un pipeline de datos para lecturas piezométricas: ingesta por lotes y en tiempo real (simulado), capas bronze/silver/gold, esquema en estrella, vista híbrida, capa de exposición (vistas y consulta por la API REST de BigQuery) y verificaciones automáticas. Proyecto final del curso de Deep Learning (Maestría en Ciencia de Datos e IA, UTEC), entregas 1 a 3.
+Demo reproducible de un pipeline de datos para lecturas piezométricas: ingesta por lotes y en tiempo real (simulado), capas bronze/silver/gold, esquema en estrella, vista híbrida, capa de exposición (vistas y consulta por la API REST de BigQuery) y verificaciones automáticas. Proyecto final del curso de Big Data (Maestría en Ciencia de Datos e IA, UTEC), entregas 1 a 3.
 
 > **Datos sintéticos.** Este repositorio no contiene datos de ninguna operación. El script `synthetic/generar_datos.py` inventa instrumentos, coordenadas, niveles y lecturas con la misma estructura que el lote usado en el informe. Las cifras del informe de la entrega 2 (35,632 lecturas, 80 instrumentos, 353 tramos) se midieron con un lote **seudonimizado** de otra procedencia; este demo produce cifras distintas con las mismas reglas.
 >
