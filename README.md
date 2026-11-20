@@ -133,7 +133,7 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 
 ## Costos y limpieza
 
-- La estimación de costos de la arquitectura propuesta está en el documento de la entrega 1 (Calculadora de precios de Google Cloud, con fecha y supuestos). Este demo, con unos 5 MB de datos, queda dentro de los niveles gratuitos de BigQuery y Cloud Storage según la documentación de Google; confirmar los valores vigentes en las páginas oficiales de precios antes de usarlo con otros volúmenes.
+- La estimación de costos de la arquitectura propuesta está en el documento de la entrega 3 (Calculadora de precios de Google Cloud, con fecha y supuestos). 
 - Un presupuesto de Google Cloud **avisa, no corta el gasto**. Revise el reporte de facturación después de cada etapa.
 - `./destroy.sh` elimina suscripción, tema, dataset y bucket (con todas sus versiones) y lista lo que queda. Con `--proyecto` borra además el proyecto.
 
