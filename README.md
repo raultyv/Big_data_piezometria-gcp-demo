@@ -1,6 +1,6 @@
 # Monitoreo piezométrico de un depósito de relaves en Google Cloud: demo end-to-end
 
-Demo reproducible de un pipeline de datos para lecturas piezométricas: ingesta por lotes y en tiempo real (simulado), capas bronze/silver/gold, esquema en estrella, vista híbrida y verificaciones automáticas. Proyecto final del curso de Deep Learning (Maestría en Ciencia de Datos e IA, UTEC), entregas 1 a 3.
+Demo reproducible de un pipeline de datos para lecturas piezométricas: ingesta por lotes y en tiempo real (simulado), capas bronze/silver/gold, esquema en estrella, vista híbrida, capa de exposición (vistas y consulta por la API REST de BigQuery) y verificaciones automáticas. Proyecto final del curso de Deep Learning (Maestría en Ciencia de Datos e IA, UTEC), entregas 1 a 3.
 
 > **Datos sintéticos.** Este repositorio no contiene datos de ninguna operación. El script `synthetic/generar_datos.py` inventa instrumentos, coordenadas, niveles y lecturas con la misma estructura que el lote usado en el informe. Las cifras del informe de la entrega 2 (35,632 lecturas, 80 instrumentos, 353 tramos) se midieron con un lote **seudonimizado** de otra procedencia; este demo produce cifras distintas con las mismas reglas.
 >
@@ -41,9 +41,12 @@ flowchart LR
   end
   E --> H{{Vista v_lectura_hibrida}}
   GE --> H
+  H --> X[Capa de exposición<br/>vistas api_*]
+  X --> API[API REST de BigQuery<br/>./consultar.sh]
+  X -.-> TAB[Tableros u otros consumidores<br/>no probado]
 ```
 
-Decisiones principales: SQL en BigQuery como motor (el volumen no justifica Spark ni Flink); marcar sin corregir, para que cada depuración sea auditable; suscripción de Pub/Sub directa a BigQuery, sin suscriptor propio; vista híbrida con marca de agua para no contar dos veces una misma fecha; procedimientos que registran cada ejecución en la tabla `ejecuciones`.
+Decisiones principales: SQL en BigQuery como motor (el volumen no justifica Spark ni Flink); marcar sin corregir, para que cada depuración sea auditable; suscripción de Pub/Sub directa a BigQuery, sin suscriptor propio; vista híbrida con marca de agua para no contar dos veces una misma fecha; capa de exposición con vistas de solo lectura (`api_*`) como punto único de consumo; procedimientos que registran cada ejecución en la tabla `ejecuciones`.
 
 ## Estructura del repositorio
 
@@ -52,16 +55,18 @@ Decisiones principales: SQL en BigQuery como motor (el volumen no justifica Spar
 ├── deploy.sh                 # lote | flujo | todo
 ├── destroy.sh                # elimina todo y lista lo que queda
 ├── verificar.sh              # repite las verificaciones sin volver a desplegar
+├── consultar.sh              # consulta la capa de exposición por la API REST (JSON)
 ├── config.env.example        # copiar a config.env y poner PROYECTO
 ├── scripts/
 │   ├── comun.sh              # funciones compartidas (tokens, verificaciones)
 │   └── 00_proyecto.sh        # opcional: proyecto, facturación, APIs y presupuesto
 ├── synthetic/generar_datos.py   # datos sintéticos + manifiesto con conteos esperados
 ├── sql/                      # 00 auditoría · 10 silver/gold · 11 exclusiones · 20 estrella
-│                             # 30 consultas · 50 eventos · 60 vista híbrida · 70 latencia
+│                             # 30 consultas · 50 eventos · 60 vista híbrida · 70 latencia · 80 exposición
+├── exposicion/consultar_api.py  # cliente mínimo de la API REST de BigQuery (solo biblioteca estándar)
 ├── publicador/               # eventos.py (generación) · publicar_eventos.py (terminal)
 ├── notebooks/B4_publicador_eventos.ipynb   # el mismo publicador para Colab
-├── verificaciones/           # 5 archivos SQL: cada fila dice OK o FALLA
+├── verificaciones/           # 6 archivos SQL: cada fila dice OK o FALLA
 └── tests/test_local_duckdb.py   # prueba local de la lógica SQL, sin nube
 ```
 
@@ -81,7 +86,8 @@ En Cloud Shell, un comando a la vez:
 git clone https://github.com/raultyv/Big_data_piezometria-gcp-demo && cd Big_data_piezometria-gcp-demo
 cp config.env.example config.env && nano config.env     # poner PROYECTO=<su-proyecto>
 ./deploy.sh lote      # bucket, dataset, bronze, silver, gold, estrella y verificaciones
-./deploy.sh flujo     # Pub/Sub, publicador simulado, eventos, vista híbrida y verificaciones
+./deploy.sh flujo     # Pub/Sub, publicador simulado, eventos, vista híbrida, capa de exposición y verificaciones
+./consultar.sh resumen_dique   # consulta de los datos procesados por la API REST (JSON)
 ./destroy.sh          # al terminar: borra los recursos y muestra lo que queda
 ```
 
@@ -103,7 +109,20 @@ scripts/00_proyecto.sh <ID_PROYECTO> <ID_CUENTA_FACTURACION> 50PEN
 | Estrella | `sp_modelar()` → `dim_instrumento`, `dim_fecha`, `dim_umbral`, `fact_lectura` (particionada por mes, agrupada por instrumento) | Conteos, sin huérfanos, cuatro niveles vigentes en cada hecho |
 | Pub/Sub | Tema, tabla `b_eventos_raw`, suscripción a BigQuery con metadatos y roles para la identidad de Pub/Sub | Enviados = recibidos |
 | Eventos | `sp_procesar_eventos()` → `s_eventos`, `g_eventos`; `v_lectura_hibrida` | Cada falla inyectada marcada; vista = gold del lote + gold del flujo |
+| Exposición | Vistas `api_ultima_lectura`, `api_resumen_dique` y `api_serie_instrumento`, que leen `v_lectura_hibrida` | Mismos instrumentos y totales que la vista híbrida; sin instrumentos repetidos en la última lectura |
 | Latencia | Consulta informativa sobre los eventos únicos | Mediana, p95 y máximo hasta publicar |
+
+## Capa de exposición
+
+Los consumidores no leen bronze, silver ni gold: leen tres vistas de solo lectura sobre `v_lectura_hibrida`.
+
+| Recurso (`./consultar.sh …`) | Vista | Devuelve |
+|---|---|---|
+| `ultima_lectura [--limite N]` | `api_ultima_lectura` | Última lectura de cada instrumento, con su margen al NAM (ordenada por margen) |
+| `resumen_dique` | `api_resumen_dique` | Instrumentos, lecturas, última fecha y lecturas en o sobre el NAM por dique |
+| `serie --instrumento COD [--limite N]` | `api_serie_instrumento` | Lecturas recientes de un instrumento (el código viaja como parámetro de la consulta) |
+
+`consultar.sh` llama a la API REST de BigQuery (`POST https://bigquery.googleapis.com/bigquery/v2/projects/<proyecto>/queries`) con el token de la sesión de `gcloud` y devuelve JSON. No es un servicio propio: es la API de BigQuery con un cliente mínimo. Un tablero (por ejemplo Looker Studio) podría conectarse a las mismas vistas; **no se probó**. Las columnas `en_o_sobre_nam` comparan con niveles provisionales del generador y no evalúan la seguridad de ninguna presa.
 
 ## Reglas de calidad
 
@@ -128,7 +147,7 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 
 ## Verificaciones y pruebas
 
-- **En la nube:** los 5 archivos de `verificaciones/` se ejecutan dentro de `deploy.sh`. Comparan BigQuery con el manifiesto que generó el script de datos. Para repetirlas sin volver a desplegar: `./verificar.sh todo` (o `./verificar.sh bronze silver_gold modelo`).
+- **En la nube:** los 6 archivos de `verificaciones/` se ejecutan dentro de `deploy.sh`. Comparan BigQuery con el manifiesto que generó el script de datos. Para repetirlas sin volver a desplegar: `./verificar.sh todo` (o `./verificar.sh bronze silver_gold modelo`).
 - **Local, sin nube:** `python3 tests/test_local_duckdb.py` traduce el SQL de BigQuery a DuckDB (con `sqlglot`) y ejecuta toda la lógica, incluido el flujo simulado. Requiere `pip install duckdb sqlglot`. No prueba particionado, clustering, procedimientos, Pub/Sub ni IAM.
 
 ## Costos y limpieza
@@ -149,7 +168,8 @@ Para el flujo: entregas duplicadas (mismo `evento_id`), instrumento inexistente,
 
 | Qué | Estado |
 |---|---|
-| Lógica SQL sobre datos sintéticos (DuckDB, 35 comprobaciones) | Probada localmente |
+| Lógica SQL sobre datos sintéticos (DuckDB, 42 comprobaciones, incluida la capa de exposición) | Probada localmente |
+| Capa de exposición y `consultar.sh` en Google Cloud | **Pendiente de validar**: probada solo en local (vistas y conversión de la respuesta); la llamada real a la API REST aún no se ejecutó |
 | `deploy.sh lote` y `deploy.sh flujo` en Google Cloud (proyecto nuevo, 19-nov-2026) | **Validados**: todas las verificaciones en OK |
 | `destroy.sh` (19-nov-2026) | **Validado**: suscripción, tema, dataset y bucket eliminados; las listas finales quedaron vacías |
 | `scripts/00_proyecto.sh` (proyecto, facturación, presupuesto) | **Validado** tras una corrección (ver abajo) |

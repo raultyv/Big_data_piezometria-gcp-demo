@@ -2,7 +2,7 @@
 # Despliegue del demo end-to-end en Google Cloud (Cloud Shell o cualquier terminal con gcloud y bq).
 #
 #   ./deploy.sh lote     bucket + dataset + carga de bronze + silver + gold + modelo en estrella + verificaciones
-#   ./deploy.sh flujo    Pub/Sub -> BigQuery + publicador simulado + silver/gold de eventos + vista híbrida + verificaciones
+#   ./deploy.sh flujo    Pub/Sub -> BigQuery + publicador simulado + silver/gold de eventos + vista híbrida + capa de exposición + verificaciones
 #   ./deploy.sh todo     lote y flujo
 #
 # Es idempotente en lo que se puede: repetirlo recrea tablas y vistas desde bronze. El flujo se publica UNA vez
@@ -118,8 +118,16 @@ flujo() {
   verificar_sql "$RAIZ/verificaciones/04_verificar_eventos.sql" "${t[@]}"
   verificar_sql "$RAIZ/verificaciones/05_verificar_hibrida.sql"
 
+  paso "Capa de exposición: vistas api_* para aplicaciones consumidoras"
+  ddl "$RAIZ/sql/80_exposicion.sql"
+  verificar_sql "$RAIZ/verificaciones/06_verificar_exposicion.sql"
+
   paso "Latencia medida (informativa)"
   ejecutar_sql "$RAIZ/sql/70_consulta_latencia.sql"
+
+  paso "Consulta de ejemplo por la API REST (./consultar.sh resumen_dique)"
+  python3 "$RAIZ/exposicion/consultar_api.py" resumen_dique --proyecto "$PROYECTO" --dataset "$DATASET" \
+      --ubicacion "$REGION" || echo "   (la consulta de ejemplo falló; repítala con ./consultar.sh resumen_dique)"
 }
 
 case "${1:-}" in

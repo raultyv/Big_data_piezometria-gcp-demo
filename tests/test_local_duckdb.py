@@ -133,6 +133,23 @@ def main():
         "__NONUM__": resumen["npa_no_numerico"], "__GOLD_EV__": resumen["base"]})
     verificar("verificaciones/05_verificar_hibrida.sql")
 
+    # --- capa de exposición: vistas api_* y conversión de la respuesta de la API REST ---
+    ejecutar(con, leer("sql/80_exposicion.sql"))
+    verificar("verificaciones/06_verificar_exposicion.sql")
+    n_ul = len(consultar(con, "SELECT * FROM `api_ultima_lectura` ORDER BY margen_nam_m LIMIT 5"))
+    resultados.append(("80_exposicion.sql", "api_ultima_lectura devuelve filas", ">0", str(n_ul), "OK" if n_ul > 0 else "FALLA"))
+    sys.path.insert(0, os.path.join(RAIZ, "exposicion"))
+    from consultar_api import filas_desde_respuesta  # noqa: E402
+    muestra = {"schema": {"fields": [{"name": "dique", "type": "STRING"}, {"name": "lecturas", "type": "INTEGER"},
+                                     {"name": "margen", "type": "FLOAT"}, {"name": "flag", "type": "BOOLEAN"}]},
+               "rows": [{"f": [{"v": "Principal"}, {"v": "12"}, {"v": "0.5"}, {"v": "true"}]},
+                        {"f": [{"v": "Lateral"}, {"v": "3"}, {"v": None}, {"v": "false"}]}]}
+    esperado = [{"dique": "Principal", "lecturas": 12, "margen": 0.5, "flag": True},
+                {"dique": "Lateral", "lecturas": 3, "margen": None, "flag": False}]
+    obtenido = filas_desde_respuesta(muestra)
+    resultados.append(("consultar_api.py", "conversión de la respuesta REST a filas", "2 filas tipadas",
+                       f"{len(obtenido)} filas", "OK" if obtenido == esperado else "FALLA"))
+
     # --- informe ---
     ancho = max(len(r[1]) for r in resultados)
     fallas = 0

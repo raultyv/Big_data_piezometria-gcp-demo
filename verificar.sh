@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Ejecuta las verificaciones contra BigQuery sin volver a desplegar nada.
 #   ./verificar.sh bronze silver_gold modelo     (cualquier combinación, en ese orden)
-#   ./verificar.sh todo                          (las cinco; las de eventos requieren que ./deploy.sh flujo ya corrió)
-# Nombres: bronze | silver_gold | modelo | eventos | hibrida
+#   ./verificar.sh todo                          (las seis; las de eventos requieren que ./deploy.sh flujo ya corrió)
+# Nombres: bronze | silver_gold | modelo | eventos | hibrida | exposicion
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/scripts/comun.sh"
-[[ $# -ge 1 ]] || { echo "Uso: ./verificar.sh {bronze|silver_gold|modelo|eventos|hibrida|todo} ..."; exit 1; }
-[[ "$1" == "todo" ]] && set -- bronze silver_gold modelo eventos hibrida
+[[ $# -ge 1 ]] || { echo "Uso: ./verificar.sh {bronze|silver_gold|modelo|eventos|hibrida|exposicion|todo} ..."; exit 1; }
+[[ "$1" == "todo" ]] && set -- bronze silver_gold modelo eventos hibrida exposicion
 
 tokens_eventos() {
   local J="$SALIDAS/resumen_eventos.json"
